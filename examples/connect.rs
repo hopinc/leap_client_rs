@@ -29,7 +29,7 @@ async fn main() -> Result<(), std::io::Error> {
     .await?;
 
     if let Ok(channel) = std::env::var("CHANNEL") {
-        manager.channel_subscribe(&channel).await.ok();
+        manager.channel_subscribe(&channel).await?;
     }
 
     while (manager.listen().await).is_some() {}
