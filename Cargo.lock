@@ -317,22 +317,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hop_leap"
-version = "0.1.0"
-dependencies = [
- "async-compression",
- "async-trait",
- "async-tungstenite",
- "fern",
- "futures",
- "log",
- "serde",
- "serde_json",
- "serde_repr",
- "tokio",
-]
-
-[[package]]
 name = "http"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -389,6 +373,22 @@ name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
+
+[[package]]
+name = "leap_client_rs"
+version = "0.1.0"
+dependencies = [
+ "async-compression",
+ "async-trait",
+ "async-tungstenite",
+ "fern",
+ "futures",
+ "log",
+ "serde",
+ "serde_json",
+ "serde_repr",
+ "tokio",
+]
 
 [[package]]
 name = "libc"

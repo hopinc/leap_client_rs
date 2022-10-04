@@ -64,6 +64,10 @@ pub(crate) async fn convert_message(message: Option<Message>) -> Result<Option<V
         _ => None,
     };
 
+    if let Some(ref value) = converted {
+        log::debug!("[Shard] Received raw data: {}", value);
+    }
+
     Ok(converted)
 }
 

@@ -13,7 +13,7 @@ pub enum Event {
     #[serde(rename = "SUBSCRIBE")]
     Subscribe(EventCapsule<Value>),
     #[serde(rename = "AVAILABLE")]
-    Available(EventCapsule<Channel>),
+    Available(EventCapsule<SingleChannel>),
     #[serde(rename = "UNAVAILABLE")]
     Unavailable(EventCapsule<Value>),
     #[serde(rename = "PIPE_ROOM_AVAILABLE")]
@@ -40,6 +40,8 @@ pub enum ConnectionScopes {
     Project,
     #[serde(rename = "token")]
     Token,
+    #[serde(rename = "noauth")]
+    NoAuth,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -49,6 +51,11 @@ pub struct InitEvent {
     pub metadata: Option<Value>,
     pub scope: ConnectionScopes,
     pub channels: Vec<Channel>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct SingleChannel {
+    pub channel: Channel,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
