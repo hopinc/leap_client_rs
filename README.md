@@ -1,6 +1,6 @@
 # leap_edge_rs
 
-Utility library for connecting and receiving events from [Leap Edge](https://docs.hop.io/docs/channels/internals/leap). Used for Channels and Pipe.
+Utility library for connecting and receiving events from [Leap Edge](https://docs.hop.io/other-products/channels/internals/leap). Used for Channels and Pipe.
 
 ## Installation
 
