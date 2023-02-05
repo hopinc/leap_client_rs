@@ -21,7 +21,7 @@ default-features = false
 features = ["std"]
 
 [dependencies.async-tungstenite]
-version = "^0.17"
+version = "^0.19"
 default-features = false
 features = ["tokio-runtime"]
 
