@@ -34,12 +34,12 @@ impl ConnectionStage {
 
 impl fmt::Display for ConnectionStage {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(match *self {
-            Self::Connected => "connected",
-            Self::Handshake => "handshaking",
-            Self::Identifying => "identifying",
-            Self::Disconnected => "disconnected",
-        })
+        match self {
+            Self::Connected => write!(f, "connected"),
+            Self::Handshake => write!(f, "handshaking"),
+            Self::Identifying => write!(f, "identifying"),
+            Self::Disconnected => write!(f, "disconnected"),
+        }
     }
 }
 

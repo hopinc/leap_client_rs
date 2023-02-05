@@ -18,15 +18,31 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Closed(_) => f.write_str("Connection closed"),
-            Self::ExpectedHello => f.write_str("Expected a Hello"),
-            Self::HeartbeatFailed => f.write_str("Failed sending a heartbeat"),
-            Self::InvalidAuthentication => f.write_str("Sent invalid authentication"),
-            Self::InvalidHandshake => f.write_str("Expected a valid Handshake"),
-            Self::InvalidOpCode => f.write_str("Invalid OpCode"),
-            Self::ReconnectFailure => f.write_str("Failed to Reconnect"),
+            Self::Closed(frame) => {
+                if let Some(CloseFrame { code, reason }) = frame {
+                    write!(f, "Connection closed with code {code}: {reason}")
+                } else {
+                    write!(f, "Connection closed")
+                }
+            }
+            Self::ExpectedHello => write!(f, "Expected a Hello"),
+            Self::HeartbeatFailed => write!(f, "Failed sending a heartbeat"),
+            Self::InvalidAuthentication => write!(f, "Sent invalid authentication"),
+            Self::InvalidHandshake => write!(f, "Expected a valid Handshake"),
+            Self::InvalidOpCode => write!(f, "Invalid OpCode"),
+            Self::ReconnectFailure => write!(f, "Failed to Reconnect"),
         }
     }
 }
 
 impl StdError for Error {}
+
+// pub mod close_frames {
+//     const UNKNOWN_ERROR: u16 = 4000;
+//     const INVALID_AUTH: u16 = 4001;
+//     const IDENTIFY_TIMEOUT: u16 = 4002;
+//     const UNKNOWN_OPCODE: u16 = 4004;
+//     const INVALID_PAYLOAD: u16 = 4005;
+//     const BAD_ROUTE: u16 = 4006;
+//     const OUT_OF_SYNC: u16 = 4007;
+// }

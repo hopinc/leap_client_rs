@@ -10,16 +10,14 @@ use async_tungstenite::tungstenite::error::Error as TungsteniteError;
 use async_tungstenite::tungstenite::protocol::{CloseFrame, WebSocketConfig};
 use futures::channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
 use futures::SinkExt;
-use tokio::spawn;
 use tokio::sync::Mutex;
+use tokio::task::{spawn, JoinHandle};
 use tokio::time::Instant;
 
 use self::error::Error as GatewayError;
 use self::socket::{WsStream, WsStreamExt};
 use self::types::{close_codes, ConnectionStage, GatewayEvent, ReconnectType, ShardAction};
 use crate::errors::{Error, Result};
-use crate::heartbeat::types::HeartbeatManagerEvent;
-use crate::heartbeat::HeartbeatManager;
 use crate::leap::types::Event;
 
 #[cfg(feature = "zlib")]
@@ -29,8 +27,9 @@ const ENCODING: &str = "zlib";
 
 pub struct Shard {
     pub client: WsStream,
-    heartbeat_trigger: UnboundedReceiver<()>,
-    heartbeat_manager: UnboundedSender<HeartbeatManagerEvent>,
+    heartbeat_reciever: UnboundedReceiver<()>,
+    heartbeat_sender: UnboundedSender<()>,
+    heartbeat_interval: Option<JoinHandle<()>>,
     heartbeat_instants: (Option<Instant>, Option<Instant>),
     last_heartbeat_acknowledged: bool,
     stage: ConnectionStage,
@@ -51,17 +50,14 @@ impl Shard {
         let last_heartbeat_acknowledged = true;
         let stage = ConnectionStage::Handshake;
 
-        let (trigger_tx, heartbeat_trigger) = unbounded();
-        let mut heartbeat = HeartbeatManager::new(trigger_tx);
-        let heartbeat_manager = heartbeat.heartbeat_tx();
-
-        spawn(async move { heartbeat.run().await });
+        let (heartbeat_sender, heartbeat_reciever) = unbounded::<()>();
 
         Ok(Self {
             client,
-            heartbeat_trigger,
+            heartbeat_reciever,
+            heartbeat_sender,
+            heartbeat_interval: None,
             heartbeat_instants,
-            heartbeat_manager,
             last_heartbeat_acknowledged,
             stage,
             project: project.to_string(),
@@ -108,7 +104,7 @@ impl Shard {
     }
 
     pub async fn check_heartbeat(&mut self) -> bool {
-        match self.heartbeat_trigger.try_next() {
+        match self.heartbeat_reciever.try_next() {
             // continue to send a heartbeat if it was sent from the thread
             Ok(Some(_)) => {}
             // close since we failed to get a heartbeat from the thread
@@ -139,7 +135,7 @@ impl Shard {
     ) -> Result<Option<ShardAction>> {
         match event {
             Ok(GatewayEvent::Dispatch(ref event)) => Ok(self.handle_dispatch(event)),
-            Ok(GatewayEvent::Heartbeat(tag)) => Ok(self.handle_heartbeat_event(tag).await),
+            Ok(GatewayEvent::Heartbeat(tag)) => Ok(Self::handle_heartbeat_event(tag)),
             Ok(GatewayEvent::HeartbeatAck(..)) => {
                 self.heartbeat_instants.1 = Some(Instant::now());
                 self.last_heartbeat_acknowledged = true;
@@ -148,11 +144,25 @@ impl Shard {
 
                 Ok(Some(ShardAction::Update))
             }
-            Ok(GatewayEvent::Hello(interval)) => {
-                if interval > &0 {
-                    self.heartbeat_manager
-                        .send(HeartbeatManagerEvent::UpdateInterval(*interval))
-                        .await?;
+            Ok(GatewayEvent::Hello(interval_time)) => {
+                if interval_time > &0 {
+                    let mut cloned_sender = self.heartbeat_sender.clone();
+                    let cloned_time = *interval_time;
+
+                    let heartbeat_interval = spawn(async move {
+                        let mut interval =
+                            tokio::time::interval(Duration::from_millis(cloned_time));
+
+                        loop {
+                            interval.tick().await;
+
+                            if let Err(why) = cloned_sender.send(()).await {
+                                log::warn!("[Shard] Err sending heartbeat: {why:?}");
+                            }
+                        }
+                    });
+
+                    self.heartbeat_interval = Some(heartbeat_interval);
                 }
 
                 Ok(Some(if self.stage == ConnectionStage::Handshake {
@@ -180,7 +190,7 @@ impl Shard {
         }
     }
 
-    async fn handle_heartbeat_event(&mut self, tag: &Option<String>) -> Option<ShardAction> {
+    fn handle_heartbeat_event(tag: &Option<String>) -> Option<ShardAction> {
         if let Some(tag) = tag {
             return Some(ShardAction::Heartbeat(Some(tag.clone())));
         }
@@ -236,10 +246,6 @@ impl Shard {
     }
 
     pub async fn shutdown(&mut self) {
-        self.heartbeat_manager
-            .send(HeartbeatManagerEvent::Shutdown)
-            .await
-            .ok();
         self.client.close(None).await.ok();
     }
 }

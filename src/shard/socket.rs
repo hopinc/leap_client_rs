@@ -31,44 +31,43 @@ pub trait SenderExt {
 #[async_trait]
 impl RecieverExt for WsStream {
     async fn recieve_json(&mut self) -> Result<Option<Value>> {
-        const TIMEOUT: Duration = Duration::from_millis(1);
+        const TIMEOUT: Duration = Duration::from_millis(0);
 
-        let message = match timeout(TIMEOUT, self.next()).await {
-            Ok(Some(Ok(message))) => Some(message),
+        match timeout(TIMEOUT, self.next()).await {
+            Ok(Some(Ok(message))) => convert_message(message).await,
             Ok(Some(Err(error))) => return Err(error.into()),
-            Ok(None) | Err(_) => None,
-        };
-
-        convert_message(message).await
+            Ok(None) | Err(_) => return Ok(None),
+        }
     }
 }
 
-pub(crate) async fn convert_message(message: Option<Message>) -> Result<Option<Value>> {
-    let converted = match message {
+async fn convert_message(message: Message) -> Result<Option<Value>> {
+    let bytes = match message {
         #[cfg(feature = "zlib")]
-        Some(Message::Binary(binary)) => {
+        Message::Binary(binary) => {
             let mut compressed = ZlibDecoder::new(Cursor::new(binary));
             let mut buffer = vec![];
 
             compressed.read_to_end(&mut buffer).await?;
 
-            serde_json::from_slice(&buffer)?
+            buffer
         }
 
-        Some(Message::Text(text)) => serde_json::from_str(&text)?,
+        Message::Text(text) => text.into_bytes(),
 
-        Some(Message::Close(Some(frame))) => {
-            return Err(Error::Gateway(GatewayError::Closed(Some(frame))));
+        Message::Close(frame) => {
+            return Err(Error::Gateway(GatewayError::Closed(frame)));
         }
 
-        _ => None,
+        _ => return Ok(None),
     };
 
-    if let Some(ref value) = converted {
-        log::debug!("[Shard] Received raw data: {}", value);
-    }
+    log::debug!(
+        "[Shard] Received raw data: {}",
+        String::from_utf8_lossy(&bytes)
+    );
 
-    Ok(converted)
+    Ok(Some(serde_json::from_slice(&bytes)?))
 }
 
 #[async_trait]

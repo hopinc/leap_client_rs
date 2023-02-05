@@ -18,7 +18,7 @@ async fn main() -> Result<(), std::io::Error> {
 
     while let Some(event) = manager.listen().await {
         if matches!(event, Event::Message(_) | Event::DirectMessage(_)) {
-            println!("{:?}", event);
+            println!("{event:?}");
         }
     }
 
