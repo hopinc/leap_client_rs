@@ -8,6 +8,8 @@ description = "Rust client library for the Leap Edge socket service"
 repository = "https://github.com/hopinc/leap_client_rs#readme"
 homepage = "https://hop.io"
 build = "build.rs"
+keywords = ["hop", "leap_edge", "client", "channels", "async", "tokio"]
+categories = ["network-programming", "asynchronous", "tokio"]
 
 [dependencies]
 serde_json = "^1.0"
@@ -21,7 +23,7 @@ default-features = false
 features = ["std"]
 
 [dependencies.async-tungstenite]
-version = "^0.19"
+version = "^0.22"
 default-features = false
 features = ["tokio-runtime"]
 
@@ -31,7 +33,7 @@ features = ["derive"]
 
 [dependencies.async-compression]
 optional = true
-version = "^0.3"
+version = "^0.4"
 features = ["tokio", "zlib"]
 
 [dependencies.tokio]

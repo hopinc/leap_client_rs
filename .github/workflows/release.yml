@@ -1,0 +1,72 @@
+name: Release
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  draft-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.tag.outputs.tag_name }}
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: Get tag data
+        id: tag
+        run: |
+          # replace the following commands to use the new GITHUB_OUTPUT syntax
+
+          echo "tag_name=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+
+          if [[ ${{ github.event.ref }} =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+-[0-9]+$ ]]; then
+            echo "pre_release=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create new release
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: ${{ steps.tag.outputs.pre_release == 'true' }}
+          title: "Version: ${{ steps.tag.outputs.tag_name }}"
+          draft: true
+
+  publish-release:
+    name: Publish Release
+    needs: ["draft-release"]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    environment: prod
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Login to Crates
+        uses: actions-rs/cargo@v1
+        with:
+          command: login
+          args: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+      - name: Publish Crates
+        uses: actions-rs/cargo@v1
+        with:
+          command: publish
+          args: --no-verify
+
+      - name: Update Release
+        run: gh release edit ${{ needs.draft-release.outputs.tag_name }} --draft=false --repo=${{ github.repository }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
