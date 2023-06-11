@@ -8,7 +8,7 @@ description = "Rust client library for the Leap Edge socket service"
 repository = "https://github.com/hopinc/leap_client_rs#readme"
 homepage = "https://hop.io"
 build = "build.rs"
-keywords = ["hop", "leap_edge", "client", "channels", "async", "tokio"]
+keywords = ["hop", "leap_edge", "client", "channels", "async"]
 categories = ["network-programming", "asynchronous", "tokio"]
 
 [dependencies]
