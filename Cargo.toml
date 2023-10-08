@@ -1,6 +1,6 @@
 [package]
 name = "leap_client_rs"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 license = "MPL-2.0"
 authors = ["Hop Inc."]
@@ -12,10 +12,10 @@ keywords = ["hop", "leap_edge", "client", "channels", "async"]
 categories = ["network-programming", "asynchronous", "tokio"]
 
 [dependencies]
-serde_json = "^1.0"
-async-trait = "^0.1"
-serde_repr = "^0.1"
-log = "^0.4"
+serde_json = "1.0"
+async-trait = "0.1"
+serde_repr = "0.1"
+log = "0.4"
 
 [dependencies.futures]
 version = "0.3"
@@ -23,21 +23,21 @@ default-features = false
 features = ["std"]
 
 [dependencies.async-tungstenite]
-version = "^0.22"
+version = "0.23"
 default-features = false
 features = ["tokio-runtime"]
 
 [dependencies.serde]
-version = "^1.0"
+version = "1.0"
 features = ["derive"]
 
 [dependencies.async-compression]
 optional = true
-version = "^0.4"
+version = "0.4"
 features = ["tokio", "zlib"]
 
 [dependencies.tokio]
-version = "^1.20"
+version = "1.20"
 features = ["macros", "net", "time", "sync", "io-util", "rt"]
 
 [features]
@@ -53,8 +53,8 @@ rustls-tls-native-roots = ["async-tungstenite/tokio-rustls-native-certs"]
 rustls-tls-webpki-roots = ["async-tungstenite/tokio-rustls-webpki-roots"]
 
 [dev-dependencies]
-fern = "^0.6"
+fern = "0.6"
 
 [dev-dependencies.tokio]
-version = "^1.20"
+version = "1.20"
 features = ["full"]
